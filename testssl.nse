@@ -321,17 +321,17 @@ local function fail (err) return stdnse.format_output(false, err) end
 action = function(host, port)
   local ciphers = stdnse.get_script_args(SCRIPT_NAME..".ciphers")
   local cmdresult
-  local message
+  local command
   
   if(ciphers == nil) then
     -- Run testssl.sh for Server Defaults and Vulnerbility checks
-      message = "/usr/bin/testssl --warnings=off --color 0 -S -U " .. host.targetname .. ":" .. port.number
+      command = "/usr/bin/testssl --warnings=off --color 0 -S -U " .. host.targetname .. ":" .. port.number
   else
     -- Run testssl.sh for Server Defaults and Vulnerbility checks
-      message = "/usr/bin/testssl --warnings=off --color 0 -S -E -U " .. host.targetname .. ":" .. port.number
+      command = "/usr/bin/testssl --warnings=off --color 0 -S -E -U " .. host.targetname .. ":" .. port.number
   end
   
-  local cmd = io.popen(message)
+  local cmd = io.popen(command)
   local cmdresult = cmd:read("*a")
   cmd:close()
   
