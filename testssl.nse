@@ -6,8 +6,8 @@ Performs a testssl.sh test on SSL/TLS port and displays tool output.
 ]]
 
 ---
--- Script runs on ssl ports only, the default script checks for Server Default settings and Vulnerbility checks
--- Script requirments are that testssl.sh is installed to the following directory: 
+-- Script runs on SSL ports only, the default script checks for Server Default settings and Vulnerability checks
+-- Script requirements are that testssl.sh is installed to the following directory: 
 -- * /usr/bin/testssl
 -- 
 -- $ nmap -sT --script=testssl.nse -p 80,443 www.google.com
