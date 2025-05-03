@@ -1,2 +1,2 @@
 # nmap-nse-scripts
-Custom NMAP scripts for testings.
+Custom NMAP scripts for testing.
