@@ -24,7 +24,7 @@ References:
 
 ---
 -- @usage
--- nmap -sT -p 443 --script ./wp-xmlrpc-check.nse 192.168.1.88
+-- nmap -sT -p 443 --script ./wp-xmlrpc-check.nse <target>
 -- Starting Nmap 7.94SVN ( https://nmap.org ) at 2025-05-03 21:54 BST
 -- Nmap scan report for 192.168.1.88
 -- Host is up (0.00029s latency).
