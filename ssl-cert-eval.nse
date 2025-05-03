@@ -174,6 +174,41 @@ local function count_sans(cert)
     return count, sans_str
 end
 
+-- Helper function to check for wildcard certificates
+local function check_wildcard_cert(cert)
+  local has_wildcard = false
+  local wildcard_domains = {}
+  
+  -- Check the common name for wildcards
+  if cert and cert.subject and cert.subject.commonName then
+    local cn = cert.subject.commonName
+    if string.match(cn, "^%*%.") then
+      has_wildcard = true
+      table.insert(wildcard_domains, cn)
+    end
+  end
+  
+  -- Check Subject Alternative Names for wildcards
+  if cert and cert.extensions then
+    for _, ext in ipairs(cert.extensions) do
+      if ext.name == "X509v3 Subject Alternative Name" then
+        local sans = ext.value
+        -- Look for wildcard patterns in the SANs
+        for domain in string.gmatch(sans, "DNS:[^,]+") do
+          -- Extract just the domain part after "DNS:"
+          local domain_name = string.match(domain, "DNS:([^,]+)")
+          if domain_name and string.match(domain_name, "^%*%.") then
+            has_wildcard = true
+            table.insert(wildcard_domains, domain_name)
+          end
+        end
+        break
+      end
+    end
+  end
+  
+  return has_wildcard, wildcard_domains
+end
 
 function stringify_name(name)
   local fields = {}
@@ -352,6 +387,7 @@ function check_cert_security(cert)
     else
         table.insert(issues, "  [!] Certificate validity information not available")
     end
+
     -- 5. Check for excessive number of SANs
     local sans_count, sans_str = count_sans(cert)
     if sans_count > 50 then
@@ -359,7 +395,15 @@ function check_cert_security(cert)
     elseif sans_count > 0 then
         table.insert(secure_aspects, string.format("  [+] Certificate contains a reasonable number of Subject Alternative Names (%d)", sans_count))
     end
-    
+
+    -- 6. Check for wildcard certificates
+    local has_wildcard, wildcard_domains = check_wildcard_cert(cert)
+    if has_wildcard then
+      local domains_str = table.concat(wildcard_domains, ", ")
+      table.insert(issues, string.format("  [!] Certificate uses wildcard domains: %s", domains_str))
+      -- Optionally add this to issues or informational depending on your security stance
+    end
+
     return {
         issues = issues,
         secure_aspects = secure_aspects,
@@ -430,6 +474,7 @@ local function output_tab(cert)
   o.security_issues.expiring_soon = sec_check.expiring_soon
   o.security_issues.days_until_expiry = sec_check.days_until_expiry
   o.security_issues.sans_count = sec_check.sans_count
+  o.security_issues.has_wildcard = sec_check.has_wildcard 
   o.pem = cert.pem
   return o
 end
