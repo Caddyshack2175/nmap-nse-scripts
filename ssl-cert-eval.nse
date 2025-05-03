@@ -60,6 +60,7 @@ The script works the same as the original, however it now evaluates the certific
 -- Nmap done: 1 IP address (1 host up) scanned in 0.17 seconds
 -- 
 --- 
+
 author = "David Fifield as the original author, with security evaluations by Caddyshack2175"
 
 license = "Same as Nmap--See https://nmap.org/book/man-legal.html"
