@@ -22,8 +22,44 @@ The script works the same as the original, however it now evaluates the certific
 - Weak signature algorithms (MD5 or SHA1)
 - Expired or soon-to-expire certificates
 - SAN's evaluation; which identifies the number of Subject Alternative Names being used in the Certificate
+- Wildcard certificate check
 ]]
 
+---
+-- @usage
+-- nmap -sT -p 443 --script ./ssl-cert-eval stackoverflow.com
+-- Starting Nmap 7.94SVN ( https://nmap.org ) at 2025-05-03 19:37 BST
+-- Nmap scan report for stackoverflow.com (104.18.32.7)
+-- Host is up (0.012s latency).
+-- Other addresses for stackoverflow.com (not scanned): 172.64.155.249
+-- 
+-- PORT    STATE SERVICE
+-- 443/tcp open  https
+-- | ssl-cert-eval: 
+-- | 
+-- | Subject: commonName=stackoverflow.com
+-- | Subject Alternative Name: DNS:*.stackoverflow.com, DNS:stackoverflow.com
+-- | Issuer: commonName=E5/organizationName=Let's Encrypt/countryName=US
+-- | Public Key type: ec
+-- | Public Key bits: 256
+-- | Signature Algorithm: ecdsa-with-SHA384
+-- | Not valid before: 2025-04-30T16:51:49
+-- | Not valid after:  2025-07-29T16:51:48
+-- | MD5:   8ba7:691a:4ea7:e40b:80ff:c7dd:8057:517c
+-- | SHA-1: c5df:36ba:7061:7d11:00f6:28f2:1c07:4467:ec26:df8f
+-- | 
+-- | Certificate Security Evaluation:
+-- |   [!] Weak public key length (256 bits, should be at least 2048)
+-- |   [!] Certificate uses wildcard domains: *.stackoverflow.com
+-- |   [+] Certificate is properly signed by a trusted CA
+-- |   [+] Strong signature algorithm: ecdsa-with-SHA384
+-- |   [+] Certificate is valid for 87 more days
+-- |   [+] Certificate contains a reasonable number of Subject Alternative Names (2)
+-- |_
+-- 
+-- Nmap done: 1 IP address (1 host up) scanned in 0.17 seconds
+-- 
+--- 
 author = "David Fifield as the original author, with security evaluations by Caddyshack2175"
 
 license = "Same as Nmap--See https://nmap.org/book/man-legal.html"
