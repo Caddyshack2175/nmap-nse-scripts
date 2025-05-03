@@ -94,7 +94,7 @@ action = function(host, port)
       
       local url = string.format("%s://%s%s%s", protocol, stdnse.get_hostname(host), port.number ~= 80 and port.number ~= 443 and ":" .. port.number or "", path)
 
-      output["WordPress login page found => "] = url
+      output[" [!] WordPress login page found => "] = url
       return output
     end
   end
