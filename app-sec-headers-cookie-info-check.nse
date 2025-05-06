@@ -328,26 +328,52 @@ end
 
 action = function(host, port)
   -- Set tables and variable used in the action
+  if stdnse.get_script_args("URI") then
+    URI = string.format(stdnse.get_script_args("URI"))
+  end
+
   local output = {}
-  local path = "/"
+  local path = URI or "/"
   local target = host.targetname or host.ip
   local protocol = "http"
   local is_https = false
-  
+
   -- Use HTTPS for port 443
   if port.number == 443 or port.service == "https" then
     protocol = "https"
     is_https = true
   end
+
+  if stdnse.get_script_args("https") then
+    protocol = "https"
+    is_https = true
+  end
+
+  -- Set headers and redirect options
+  local referer_header_url =  protocol .. "://" .. target .. ":" .. port.number .. path
   
+  local options = {
+    redirect_ok = 3,
+    header = {
+      ["Host"] = target .. ":" .. port.number,
+      ["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.6533.100 Safari/537.36",
+      ["Accept-Language"] = "en-GB",
+      ["Referer"] = referer_header_url
+    },
+  }
+  -- Debug [1] - Check out going headers are set
+  stdnse.debug1("Request headers and options configured => %s", options)
   local url = protocol .. "://" .. target .. ":" .. port.number .. path
   
   -- Add target information
   table.insert(output, "\n")
   table.insert(output, "[+] Port: " .. port.number .. " - " .. url)
-  
+  -- If HTTPS is set, set service to HTTPS
+  if is_https then
+    port.service = "https"
+  end
   -- Make standard HTTP request
-  local response = http.get(host, port, path)
+  local response = http.get(host, port, path, options)
   
   if not response or not response.status then
     return "[!] Failed to retrieve response from server"
