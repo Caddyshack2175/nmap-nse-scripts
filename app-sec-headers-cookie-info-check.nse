@@ -333,7 +333,7 @@ action = function(host, port)
   end
 
   local output = {}
-  local path = URI or "/"
+  local path = "/" or URI
   local target = host.targetname or host.ip
   local protocol = "http"
   local is_https = false
