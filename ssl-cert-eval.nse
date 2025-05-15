@@ -60,7 +60,6 @@ The script works the same as the original, however it now evaluates the certific
 -- Nmap done: 1 IP address (1 host up) scanned in 0.17 seconds
 -- 
 --- 
-
 author = "David Fifield as the original author, with security evaluations by Caddyshack2175"
 
 license = "Same as Nmap--See https://nmap.org/book/man-legal.html"
@@ -302,16 +301,9 @@ local function get_key_bits(cert)
   
 -- New function to check certificate security
 function check_cert_security(cert)
+    -- Debug certificate validity structure
     stdnse.debug1("Certificate validity structure: %s", type(cert.validity))
-    if cert and cert.validity and cert.validity.notAfter then
-        stdnse.debug1("Certificate notAfter type: %s", type(cert.validity.notAfter))
-        if type(cert.validity.notAfter) == "table" then
-            -- Print table structure
-            for k, v in pairs(cert.validity.notAfter) do
-                stdnse.debug1("notAfter[%s] = %s", tostring(k), tostring(v))
-            end
-        end
-    end
+    
     local issues = {}
     local secure_aspects = {}
     
@@ -323,8 +315,9 @@ function check_cert_security(cert)
     local expiring_soon = false
     local days_until_expiry = 0
     local sans_count = 0
+    local has_wildcard = false
     
-    -- 1. Check if certificate is self-signed (using only valid string comparisons)
+    -- 1. Check if certificate is self-signed
     local subject_cn = nil
     local issuer_cn = nil
     
@@ -350,7 +343,7 @@ function check_cert_security(cert)
       table.insert(secure_aspects, "  [+] Certificate is properly signed by a trusted CA")
     end
     
-    -- 2. Check public key strength (safely using our helper function)
+    -- 2. Check public key strength
     local key_bits = get_key_bits(cert)
     
     if key_bits > 0 then
@@ -364,7 +357,7 @@ function check_cert_security(cert)
       table.insert(issues, "  [!] Could not determine public key length")
     end
     
-    -- 3. Check signature algorithm (with type safety)
+    -- 3. Check signature algorithm
     if cert and cert.sig_algorithm and type(cert.sig_algorithm) == "string" then
       local sig_algo_lower = string.lower(cert.sig_algorithm)
       if string.find(sig_algo_lower, "md5") or string.find(sig_algo_lower, "sha1") then
@@ -377,52 +370,15 @@ function check_cert_security(cert)
       table.insert(issues, "  [!] Could not determine signature algorithm")
     end
     
-    -- 4. Check certificate expiry (with extensive type checking)
-    if cert and cert.validity then
-        local notAfter = cert.validity.notAfter
-        local expiry_issues, expiry_aspects, expired, expiring_soon, days_until_expiry = get_expiry_info(cert)
-        
-        if notAfter then
-        if type(notAfter) == "string" then
-            table.insert(issues, "  [!] Cannot parse expiration date format")
-        else
-            -- Make sure notAfter is a number before using it
-            local expiry_timestamp = nil
-
-            for _, issue in ipairs(expiry_issues) do
-                table.insert(issues, issue)
-            end
-              
-            for _, aspect in ipairs(expiry_aspects) do
-                table.insert(secure_aspects, aspect)
-            end
-            if expiry_timestamp then
-            local current_time = os.time()
-            
-            if current_time > expiry_timestamp then
-                expired = true
-                local days_expired = math.floor((current_time - expiry_timestamp) / 86400)
-                table.insert(issues, string.format("  [!] Certificate expired %d day%s ago", 
-                                            days_expired, days_expired == 1 and "" or "s"))
-            else
-                -- Calculate days until expiry
-                days_until_expiry = math.floor((expiry_timestamp - current_time) / 86400)
-                
-                if days_until_expiry <= 30 then
-                expiring_soon = true
-                table.insert(issues, string.format("  [!] Certificate expires in %d day%s", 
-                                                days_until_expiry, days_until_expiry == 1 and "" or "s"))
-                else
-                table.insert(secure_aspects, string.format("  [+] Certificate is valid for %d more days", days_until_expiry))
-                end
-            end
-            end
-        end
-        else
-        table.insert(issues, "  [!] Certificate expiration date not available")
-        end
-    else
-        table.insert(issues, "  [!] Certificate validity information not available")
+    -- 4. Check certificate expiry (just use the helper function)
+    local expiry_issues, expiry_aspects, expired, expiring_soon, days_until_expiry = get_expiry_info(cert)
+    
+    for _, issue in ipairs(expiry_issues) do
+        table.insert(issues, issue)
+    end
+    
+    for _, aspect in ipairs(expiry_aspects) do
+        table.insert(secure_aspects, aspect)
     end
 
     -- 5. Check for excessive number of SANs
@@ -438,7 +394,6 @@ function check_cert_security(cert)
     if has_wildcard then
       local domains_str = table.concat(wildcard_domains, ", ")
       table.insert(issues, string.format("  [!] Certificate uses wildcard domains: %s", domains_str))
-      -- Optionally add this to issues or informational depending on your security stance
     end
 
     return {
@@ -450,8 +405,9 @@ function check_cert_security(cert)
         expired = expired,
         expiring_soon = expiring_soon,
         days_until_expiry = days_until_expiry,
-        sans_count = sans_count
-      }
+        sans_count = sans_count,
+        has_wildcard = has_wildcard
+    }
 end
 
 local function output_tab(cert)
@@ -511,7 +467,7 @@ local function output_tab(cert)
   o.security_issues.expiring_soon = sec_check.expiring_soon
   o.security_issues.days_until_expiry = sec_check.days_until_expiry
   o.security_issues.sans_count = sec_check.sans_count
-  o.security_issues.has_wildcard = sec_check.has_wildcard 
+  o.security_issues.has_wildcard = sec_check.has_wildcard
   o.pem = cert.pem
   return o
 end
